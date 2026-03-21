@@ -9,8 +9,11 @@ class utfeed_widget extends UTFEED_Widgets
 
 	public function widget($args, $instance)
 	{
+		$instance = $this->GetInstanceValues($instance);
+		echo $args['before_widget'];
 		echo $this->GetWidgetTitle($args, $instance);
 		echo $this->GetWidgetHtml($instance);
+		echo $args['after_widget'];
 	}
 
 	public function form($instance)
@@ -27,10 +30,8 @@ class utfeed_widget extends UTFEED_Widgets
 			<select class="widefat" id="<?php echo esc_attr($this->get_field_id('feed_type')); ?>" name="<?php echo esc_attr($this->get_field_name('feed_type')); ?>">
 				<?php
 				$feed_types = UTFEED_Twitter::getTwitterFeedTypes();
-				foreach ($feed_types as $feed_type) {
-					echo '<option value="' . esc_attr($feed_type[0]) . '"';
-					echo ($instance['feed_type'] == $feed_type[0]) ? "selected" : "";
-					echo ' value="' . esc_attr($feed_type[0]) . '">' . esc_attr($feed_type[1]) . '</option>';
+				foreach ($feed_types as $option) {
+					echo '<option value="' . esc_attr($option[0]) . '" ' . selected($feed_type, $option[0], false) . '>' . esc_attr($option[1]) . '</option>';
 				}
 				?>
 			</select>
@@ -63,9 +64,7 @@ class utfeed_widget extends UTFEED_Widgets
 				<?php
 				$langs = UTFEED_Twitter::getTwitterFeedLangs();
 				foreach ($langs as $lang) {
-					echo '<option value="' . esc_attr($lang[0]) . '"';
-					echo ($instance['feed_lang'] == $lang[0]) ? "selected" : "";
-					echo ' value="' . esc_attr($lang[0]) . '">' . esc_attr($lang[1]) . '</option>';
+					echo '<option value="' . esc_attr($lang[0]) . '" ' . selected($feed_lang, $lang[0], false) . '>' . esc_attr($lang[1]) . '</option>';
 				}
 				?>
 			</select>
@@ -84,8 +83,8 @@ class utfeed_widget extends UTFEED_Widgets
 			</select>
 		</p>
 		<p>
-			<input class="checkbox" type="checkbox" <?php checked($instance['feed_track'], "on") ?> id="<?php echo esc_attr($this->get_field_id('feed_track')); ?>" name="<?php echo esc_attr($this->get_field_name('feed_track')); ?>" />
-			<label for="<?php echo esc_attr($this->get_field_id('feed_track')); ?>" title="<?php _e('Click Here To Read More!', 'ultimate-twitter-feeds') ?>"><?php _e('Opt-out of tailoring Twitter <a href="https://developer.twitter.com/en/docs/twitter-for-websites/privacy" target="_blank">?</a>', 'ultimate-twitter-feeds'); ?>
+			<input class="checkbox" type="checkbox" <?php checked($values['feed_track'], "on") ?> id="<?php echo esc_attr($this->get_field_id('feed_track')); ?>" name="<?php echo esc_attr($this->get_field_name('feed_track')); ?>" />
+			<label for="<?php echo esc_attr($this->get_field_id('feed_track')); ?>" title="<?php _e('Click Here To Read More!', 'ultimate-twitter-feeds') ?>"><?php _e('Opt-out of tailoring X <a href="https://docs.x.com/x-for-websites/javascript-api/guides/set-up-x-for-websites" target="_blank">?</a>', 'ultimate-twitter-feeds'); ?>
 			</label>
 		</p>
 <?php

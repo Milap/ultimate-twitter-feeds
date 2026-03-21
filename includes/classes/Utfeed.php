@@ -7,25 +7,22 @@ class UTFEED_Widgets extends WP_Widget {
 		$this->defaultValues['title'] = UTFEED_PLUGIN_TITLE;
 		$this->defaultValues['handle'] = 'TwitterDev';
 		$this->defaultValues['actual_handle'] = 'TwitterDev';
+		$this->defaultValues['feed_type'] = 'profile';
 		$this->defaultValues['feed_lang'] = '';
 		$this->defaultValues['feed_width'] = 350;
 		$this->defaultValues['feed_height'] = 600;
 		$this->defaultValues['feed_theme'] = 'light';
+		$this->defaultValues['feed_track'] = '';
 	}
 	
 	protected function GetWidgetTitle( $args, $instance ) {
-		$title = apply_filters( 'widget_title', $instance['title'] );
-		
-		$title .= $args['before_widget'];
-		
+		$title = ! empty( $instance['title'] ) ? $instance['title'] : __(UTFEED_PLUGIN_TITLE, 'ultimate-twitter-feeds' );
+		$title = apply_filters( 'widget_title', $title );
+
 		if ( ! empty( $title ) ){
 			$title = $args['before_title'] . $title . $args['after_title'];
 		}
-		else {
-			$title = __(UTFEED_PLUGIN_TITLE, 'ultimate-twitter-feeds' );	
-		}
-		
-		$title .= $args['after_widget'];
+
 		return apply_filters( 'utfeed_widget_title', $title );
 	}
 	

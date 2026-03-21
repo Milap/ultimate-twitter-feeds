@@ -1,17 +1,19 @@
 === Ultimate Twitter Feeds ===
-Contributors: ultimatetwitterfeeds
-Tags: Twitter, Twitter feed, Tweets, Twitter widget, Custom Twitter Feed
+Contributors: Milap, Imneerav
+Tags: Twitter, Twitter feed, Tweets, Twitter widget
 Requires at least: 3.4
-Tested up to: 5.8
-Stable tag: 0.1
+Tested up to: 6.9
+Stable tag: 0.2
+Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Donate link: https://www.paypal.me/MilapPatel
 
-Ultimate Twitter Feeds allows you to display customizable Twitter Tweets from any user timeline,  any user Twitter List and single Tweet on your website\'s sidebar or footer area.
+Display lightweight Twitter feeds. Fetch profiles, lists, or single tweets with customizable sizes and language support.
 
 == Description ==
 
-Ultimate Twitter Feeds is one of the best Lightweight plugin to display Twitter feeds (Tweets) on your website. It fetches feeds from Twitter Profile, Twitter User List and single Tweet. It provides additional configuration options like Height, Width, Language and Theme.
+Ultimate Twitter Feeds is a lightweight plugin to display Twitter feeds. Fetch profiles, lists, or single tweets with customizable size, language.
 
 An inside look:
 
@@ -30,7 +32,7 @@ https://www.youtube.com/watch?v=8gxE5CPLiJM
 
 The following plugins are recommended for users:
 
-* [Facebook Page Feeds Widget](https://wordpress.org/plugins/facebook-pagelike-widget/) by Milap - With Facebook Page Feeds Widget, you can display your Facebook Page feeds on your website quickly.
+* [Facebook Page Feeds Widget](https://wordpress.org/plugins/facebook-pagelike-widget/) by Milap – With Facebook Page Feeds Widget, you can display your Facebook Page feeds on your website quickly.
 
 = Privacy Notices =
 
@@ -53,7 +55,20 @@ Do you have questions or issues with Ultimate Twitter Feeds?
 
 For more details,
 
-http://codex.wordpress.org/Managing_Plugins
+https://codex.wordpress.org/Managing_Plugins
+
+== X API Setup (Client ID / Secret) ==
+
+1. Sign in to X Developer Portal: https://developer.x.com/
+2. Create a Project and App (or open your existing App).
+3. Enable OAuth 2.0 for the App.
+4. Add this redirect URI in your X App settings:
+   `https://YOUR_SITE/wp-admin/admin-post.php?action=utfeed_x_oauth_callback`
+5. Copy your App Client ID and Client Secret.
+6. In WordPress admin go to `Settings -> Ultimate Twitter Feeds`, paste Client ID/Secret, and click `Save Settings`.
+7. Click `Connect with X` and approve access.
+
+Recommended scopes: `tweet.read users.read offline.access`
 
 == Screenshots ==
 1. Widget settings to display Feeds from Twitter User Profile 
@@ -65,3 +80,11 @@ http://codex.wordpress.org/Managing_Plugins
 7. Displays User List Tweets with Dark Theme
 8. Displays Single User Tweet with Light Theme
 9. Displays Single User Tweet with Dark Theme
+
+== Changelog ==
+
+= 1.0 =
+* Initial release.
+
+== Upgrade Notice ==
+* Not Applicable

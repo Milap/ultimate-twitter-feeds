@@ -2,8 +2,8 @@
 /*
    Plugin Name: Ultimate Twitter Feeds
    description: An <strong>Ultimate Plugin</strong> to display Twitter Feeds on your website.
-   Version: 0.1
-   Author: Ultimate Twitter Feeds Devs
+   Version: 0.2
+   Author: Milap
    Author URI: http://patelmilap.wordperss.com
    License: GPLv2 or later
    Text Domain: ultimate-twitter-feeds
