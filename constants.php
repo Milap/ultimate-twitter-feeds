@@ -14,6 +14,6 @@
 	define( 'UTFEED_PLUGIN_TWITTER_OEMBED_URL_LEGACY', 'https://publish.twitter.com/oembed' );
 	define( 'UTFEED_PLUGIN_TWITTER_WIDGETS_JS', 'https://platform.x.com/widgets.js' );
 	define( 'UTFEED_PLUGIN_TWITTER_WIDGETS_JS_LEGACY', 'https://platform.twitter.com/widgets.js' );
-	define( 'UTFEED_X_OAUTH_AUTHORIZE_URL', 'https://twitter.com/i/oauth2/authorize' );
+	define( 'UTFEED_X_OAUTH_AUTHORIZE_URL', 'https://x.com/i/oauth2/authorize' );
 	define( 'UTFEED_X_OAUTH_TOKEN_URL', 'https://api.x.com/2/oauth2/token' );
 	define( 'UTFEED_X_OAUTH_TOKEN_URL_LEGACY', 'https://api.twitter.com/2/oauth2/token' );

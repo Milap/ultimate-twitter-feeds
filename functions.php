@@ -157,6 +157,34 @@
 		update_option( 'utfeed_settings', $settings );
 	}
 
+	function utfeed_get_token_store() {
+		$raw = get_option( 'utfeed_oauth_tokens', null );
+		return is_array( $raw ) ? $raw : array();
+	}
+
+	function utfeed_save_token_store( $tokens ) {
+		$tokens = is_array( $tokens ) ? $tokens : array();
+		$existing = get_option( 'utfeed_oauth_tokens', null );
+		if ( null === $existing ) {
+			add_option( 'utfeed_oauth_tokens', $tokens, '', false );
+		} else {
+			update_option( 'utfeed_oauth_tokens', $tokens );
+		}
+	}
+
+	function utfeed_clear_token_store() {
+		delete_option( 'utfeed_oauth_tokens' );
+	}
+
+	function utfeed_has_access_token() {
+		$tokens = utfeed_get_token_store();
+		if ( ! empty( $tokens['access_token'] ) ) {
+			return true;
+		}
+		$settings = utfeed_get_settings();
+		return ! empty( $settings['access_token'] );
+	}
+
 	function utfeed_sanitize_settings( $input ) {
 		$input = is_array( $input ) ? $input : array();
 		$old = utfeed_get_settings();
@@ -239,6 +267,7 @@
 			'missing_client_id' => array( 'class' => 'error', 'text' => __( 'Please add Client ID before connecting.', 'ultimate-twitter-feeds' ) ),
 			'invalid_state' => array( 'class' => 'error', 'text' => __( 'OAuth state validation failed. Please try again.', 'ultimate-twitter-feeds' ) ),
 			'missing_code' => array( 'class' => 'error', 'text' => __( 'Authorization code was not returned by X.', 'ultimate-twitter-feeds' ) ),
+			'missing_verifier' => array( 'class' => 'error', 'text' => __( 'OAuth code verifier expired. Please try connecting again.', 'ultimate-twitter-feeds' ) ),
 			'token_exchange_failed' => array( 'class' => 'error', 'text' => __( 'Could not exchange auth code for token. Check app credentials and redirect URI.', 'ultimate-twitter-feeds' ) ),
 			'access_denied' => array( 'class' => 'error', 'text' => __( 'Access was denied in X authorization flow.', 'ultimate-twitter-feeds' ) ),
 		);
@@ -257,11 +286,62 @@
 		$settings = utfeed_get_settings();
 		$connect_url = wp_nonce_url( admin_url( 'admin-post.php?action=utfeed_x_oauth_start' ), 'utfeed_oauth_start' );
 		$disconnect_url = wp_nonce_url( admin_url( 'admin-post.php?action=utfeed_x_oauth_disconnect' ), 'utfeed_oauth_disconnect' );
-		$is_connected = ! empty( $settings['access_token'] );
+		$is_connected = utfeed_has_access_token();
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Ultimate Twitter Feeds Settings', 'ultimate-twitter-feeds' ); ?></h1>
 			<?php utfeed_render_settings_notice(); ?>
+			<?php if ( isset( $_GET['utfeed_debug'] ) ) : ?>
+				<?php
+				$debug_settings = utfeed_get_settings();
+				$debug_tokens = utfeed_get_token_store();
+				$token_len = ! empty( $debug_settings['access_token'] ) ? strlen( $debug_settings['access_token'] ) : 0;
+				$store_token_len = ! empty( $debug_tokens['access_token'] ) ? strlen( $debug_tokens['access_token'] ) : 0;
+				$expires_at = ! empty( $debug_settings['expires_at'] ) ? absint( $debug_settings['expires_at'] ) : 0;
+				$store_expires_at = ! empty( $debug_tokens['expires_at'] ) ? absint( $debug_tokens['expires_at'] ) : 0;
+				$connected_at = ! empty( $debug_settings['connected_at'] ) ? absint( $debug_settings['connected_at'] ) : 0;
+				$store_connected_at = ! empty( $debug_tokens['connected_at'] ) ? absint( $debug_tokens['connected_at'] ) : 0;
+				$oauth_debug = get_transient( 'utfeed_oauth_debug' );
+				$api_debug = get_transient( 'utfeed_api_debug' );
+				$debug_build = filemtime( __FILE__ );
+				?>
+				<div class="notice notice-warning" style="padding:12px 16px;">
+					<p><strong><?php esc_html_e( 'Debug: OAuth Storage', 'ultimate-twitter-feeds' ); ?></strong></p>
+					<p><?php echo esc_html( 'Debug build (filemtime): ' . $debug_build ); ?></p>
+					<p><?php echo esc_html( 'Access token length: ' . $token_len ); ?></p>
+					<p><?php echo esc_html( 'Token store length: ' . $store_token_len ); ?></p>
+					<p><?php echo esc_html( 'Token type: ' . ( ! empty( $debug_settings['token_type'] ) ? $debug_settings['token_type'] : '(empty)' ) ); ?></p>
+					<p><?php echo esc_html( 'Token store type: ' . ( ! empty( $debug_tokens['token_type'] ) ? $debug_tokens['token_type'] : '(empty)' ) ); ?></p>
+					<p><?php echo esc_html( 'Expires at (unix): ' . ( $expires_at ? $expires_at : '(empty)' ) ); ?></p>
+					<p><?php echo esc_html( 'Token store expires at (unix): ' . ( $store_expires_at ? $store_expires_at : '(empty)' ) ); ?></p>
+					<p><?php echo esc_html( 'Connected at (unix): ' . ( $connected_at ? $connected_at : '(empty)' ) ); ?></p>
+					<p><?php echo esc_html( 'Token store connected at (unix): ' . ( $store_connected_at ? $store_connected_at : '(empty)' ) ); ?></p>
+					<p><?php echo esc_html( 'Is multisite: ' . ( is_multisite() ? 'yes' : 'no' ) ); ?></p>
+					<?php if ( is_array( $oauth_debug ) ) : ?>
+						<p><strong><?php esc_html_e( 'Last OAuth Save Attempt', 'ultimate-twitter-feeds' ); ?></strong></p>
+						<p><?php echo esc_html( 'Update result: ' . ( ! empty( $oauth_debug['update_result'] ) ? $oauth_debug['update_result'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'Fallback result: ' . ( isset( $oauth_debug['fallback_result'] ) ? $oauth_debug['fallback_result'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'Saved access length: ' . ( isset( $oauth_debug['saved_access_len'] ) ? $oauth_debug['saved_access_len'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'Stored access length: ' . ( isset( $oauth_debug['stored_access_len'] ) ? $oauth_debug['stored_access_len'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'Stored keys: ' . ( ! empty( $oauth_debug['stored_keys'] ) ? implode( ',', $oauth_debug['stored_keys'] ) : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'DB error: ' . ( isset( $oauth_debug['db_error'] ) && '' !== $oauth_debug['db_error'] ? $oauth_debug['db_error'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'DB last query: ' . ( isset( $oauth_debug['db_last_query'] ) && '' !== $oauth_debug['db_last_query'] ? $oauth_debug['db_last_query'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'Debug time (unix): ' . ( ! empty( $oauth_debug['time'] ) ? $oauth_debug['time'] : '(empty)' ) ); ?></p>
+					<?php endif; ?>
+					<?php if ( is_array( $api_debug ) ) : ?>
+						<p><strong><?php esc_html_e( 'Last X API Call', 'ultimate-twitter-feeds' ); ?></strong></p>
+						<p><?php echo esc_html( 'Time (unix): ' . ( ! empty( $api_debug['time'] ) ? $api_debug['time'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'Status: ' . ( isset( $api_debug['status'] ) ? $api_debug['status'] : '(empty)' ) ); ?></p>
+						<p><?php echo esc_html( 'URL: ' . ( ! empty( $api_debug['url'] ) ? $api_debug['url'] : '(empty)' ) ); ?></p>
+						<?php if ( ! empty( $api_debug['message'] ) ) : ?>
+							<p><?php echo esc_html( 'Message: ' . $api_debug['message'] ); ?></p>
+						<?php endif; ?>
+						<?php if ( ! empty( $api_debug['body'] ) ) : ?>
+							<p><?php echo esc_html( 'Body: ' . $api_debug['body'] ); ?></p>
+						<?php endif; ?>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
 			<div class="notice notice-info" style="padding:12px 16px;">
 				<p><strong><?php esc_html_e( 'How to get Client ID and Client Secret from X', 'ultimate-twitter-feeds' ); ?></strong></p>
 				<ol style="margin-left:18px;">
@@ -374,13 +454,18 @@
 	}
 
 	function utfeed_try_token_request( $url, $body ) {
+		$headers = array(
+			'Content-Type' => 'application/x-www-form-urlencoded',
+		);
+		if ( isset( $body['_auth_header'] ) && is_string( $body['_auth_header'] ) && '' !== $body['_auth_header'] ) {
+			$headers['Authorization'] = $body['_auth_header'];
+			unset( $body['_auth_header'] );
+		}
 		$response = wp_remote_post(
 			$url,
 			array(
 				'timeout' => 20,
-				'headers' => array(
-					'Content-Type' => 'application/x-www-form-urlencoded',
-				),
+				'headers' => $headers,
 				'body' => $body,
 			)
 		);
@@ -420,6 +505,10 @@
 			wp_safe_redirect( utfeed_get_settings_url( 'missing_code' ) );
 			exit;
 		}
+		if ( empty( $verifier ) ) {
+			wp_safe_redirect( utfeed_get_settings_url( 'missing_verifier' ) );
+			exit;
+		}
 
 		$settings = utfeed_get_settings();
 		$body = array(
@@ -429,7 +518,9 @@
 			'client_id' => $settings['client_id'],
 			'code_verifier' => $verifier,
 		);
-		if ( ! empty( $settings['client_secret'] ) ) {
+		if ( ! empty( $settings['client_secret'] ) && ! empty( $settings['client_id'] ) ) {
+			$body['_auth_header'] = 'Basic ' . base64_encode( $settings['client_id'] . ':' . $settings['client_secret'] );
+		} elseif ( ! empty( $settings['client_secret'] ) ) {
 			$body['client_secret'] = $settings['client_secret'];
 		}
 
@@ -448,7 +539,36 @@
 		$settings['token_type'] = ! empty( $token['token_type'] ) ? $token['token_type'] : 'bearer';
 		$settings['expires_at'] = ! empty( $token['expires_in'] ) ? ( time() + absint( $token['expires_in'] ) ) : 0;
 		$settings['connected_at'] = time();
-		utfeed_update_settings( $settings );
+
+		$token_store = array(
+			'access_token' => $settings['access_token'],
+			'refresh_token' => $settings['refresh_token'],
+			'token_type' => $settings['token_type'],
+			'expires_at' => $settings['expires_at'],
+			'connected_at' => $settings['connected_at'],
+		);
+		utfeed_save_token_store( $token_store );
+
+		$update_result = update_option( 'utfeed_settings', $settings );
+		$verify_settings = get_option( 'utfeed_settings', array() );
+		$fallback_result = null;
+		if ( ! $update_result && ( ! is_array( $verify_settings ) || empty( $verify_settings['access_token'] ) ) ) {
+			delete_option( 'utfeed_settings' );
+			$fallback_result = add_option( 'utfeed_settings', $settings, '', false );
+			$verify_settings = get_option( 'utfeed_settings', array() );
+		}
+		$wpdb = isset( $GLOBALS['wpdb'] ) ? $GLOBALS['wpdb'] : null;
+		$debug_payload = array(
+			'time' => time(),
+			'update_result' => $update_result ? 'true' : 'false',
+			'fallback_result' => is_null( $fallback_result ) ? '(not_run)' : ( $fallback_result ? 'true' : 'false' ),
+			'saved_access_len' => strlen( $settings['access_token'] ),
+			'stored_access_len' => ( is_array( $verify_settings ) && ! empty( $verify_settings['access_token'] ) ) ? strlen( $verify_settings['access_token'] ) : 0,
+			'stored_keys' => is_array( $verify_settings ) ? array_keys( $verify_settings ) : array(),
+			'db_error' => ( $wpdb && ! empty( $wpdb->last_error ) ) ? $wpdb->last_error : '',
+			'db_last_query' => ( $wpdb && ! empty( $wpdb->last_query ) ) ? $wpdb->last_query : '',
+		);
+		set_transient( 'utfeed_oauth_debug', $debug_payload, 10 * MINUTE_IN_SECONDS );
 
 		wp_safe_redirect( utfeed_get_settings_url( 'connected' ) );
 		exit;
@@ -456,16 +576,20 @@
 
 	function utfeed_refresh_access_token() {
 		$settings = utfeed_get_settings();
-		if ( empty( $settings['refresh_token'] ) || empty( $settings['client_id'] ) ) {
+		$tokens = utfeed_get_token_store();
+		$refresh_token = ! empty( $tokens['refresh_token'] ) ? $tokens['refresh_token'] : $settings['refresh_token'];
+		if ( empty( $refresh_token ) || empty( $settings['client_id'] ) ) {
 			return false;
 		}
 
 		$body = array(
 			'grant_type' => 'refresh_token',
-			'refresh_token' => $settings['refresh_token'],
+			'refresh_token' => $refresh_token,
 			'client_id' => $settings['client_id'],
 		);
-		if ( ! empty( $settings['client_secret'] ) ) {
+		if ( ! empty( $settings['client_secret'] ) && ! empty( $settings['client_id'] ) ) {
+			$body['_auth_header'] = 'Basic ' . base64_encode( $settings['client_id'] . ':' . $settings['client_secret'] );
+		} elseif ( ! empty( $settings['client_secret'] ) ) {
 			$body['client_secret'] = $settings['client_secret'];
 		}
 
@@ -484,6 +608,15 @@
 		}
 		$settings['token_type'] = ! empty( $token['token_type'] ) ? $token['token_type'] : 'bearer';
 		$settings['expires_at'] = ! empty( $token['expires_in'] ) ? ( time() + absint( $token['expires_in'] ) ) : 0;
+		utfeed_save_token_store(
+			array(
+				'access_token' => $settings['access_token'],
+				'refresh_token' => $settings['refresh_token'],
+				'token_type' => $settings['token_type'],
+				'expires_at' => $settings['expires_at'],
+				'connected_at' => ! empty( $tokens['connected_at'] ) ? $tokens['connected_at'] : time(),
+			)
+		);
 		utfeed_update_settings( $settings );
 		return true;
 	}
@@ -491,6 +624,17 @@
 	function utfeed_get_api_token() {
 		if ( defined( 'UTFEED_X_BEARER_TOKEN' ) && UTFEED_X_BEARER_TOKEN ) {
 			return trim( UTFEED_X_BEARER_TOKEN );
+		}
+
+		$tokens = utfeed_get_token_store();
+		if ( ! empty( $tokens['access_token'] ) ) {
+			if ( ! empty( $tokens['expires_at'] ) && ( time() + 60 ) >= absint( $tokens['expires_at'] ) ) {
+				utfeed_refresh_access_token();
+				$tokens = utfeed_get_token_store();
+			}
+			if ( ! empty( $tokens['access_token'] ) ) {
+				return $tokens['access_token'];
+			}
 		}
 
 		$settings = utfeed_get_settings();
@@ -525,6 +669,7 @@
 		$settings['token_type'] = '';
 		$settings['connected_at'] = 0;
 		utfeed_update_settings( $settings );
+		utfeed_clear_token_store();
 
 		wp_safe_redirect( utfeed_get_settings_url( 'disconnected' ) );
 		exit;

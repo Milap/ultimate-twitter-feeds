@@ -195,16 +195,48 @@ class UTFEED_Twitter
 		);
 
 		if ( is_wp_error( $response ) ) {
+			set_transient(
+				'utfeed_api_debug',
+				array(
+					'time' => time(),
+					'url' => $url,
+					'status' => 'wp_error',
+					'message' => $response->get_error_message(),
+				),
+				5 * MINUTE_IN_SECONDS
+			);
 			return null;
 		}
 
-		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		$status = wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $status ) {
+			$body = wp_remote_retrieve_body( $response );
+			set_transient(
+				'utfeed_api_debug',
+				array(
+					'time' => time(),
+					'url' => $url,
+					'status' => $status,
+					'body' => is_string( $body ) ? substr( $body, 0, 2000 ) : '',
+				),
+				5 * MINUTE_IN_SECONDS
+			);
 			return null;
 		}
 
 		$body = wp_remote_retrieve_body( $response );
 		$json = json_decode( $body, true );
 		if ( ! is_array( $json ) ) {
+			set_transient(
+				'utfeed_api_debug',
+				array(
+					'time' => time(),
+					'url' => $url,
+					'status' => 'invalid_json',
+					'body' => is_string( $body ) ? substr( $body, 0, 2000 ) : '',
+				),
+				5 * MINUTE_IN_SECONDS
+			);
 			return null;
 		}
 
