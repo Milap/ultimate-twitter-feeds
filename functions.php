@@ -137,6 +137,8 @@
 			'authorize_url' => UTFEED_X_OAUTH_AUTHORIZE_URL,
 			'token_url' => UTFEED_X_OAUTH_TOKEN_URL,
 			'scopes' => 'tweet.read users.read offline.access',
+			'cache_minutes' => 10,
+			'stale_hours' => 6,
 			'access_token' => '',
 			'refresh_token' => '',
 			'expires_at' => 0,
@@ -204,6 +206,8 @@
 		$new['authorize_url'] = isset( $input['authorize_url'] ) ? esc_url_raw( $input['authorize_url'] ) : UTFEED_X_OAUTH_AUTHORIZE_URL;
 		$new['token_url'] = isset( $input['token_url'] ) ? esc_url_raw( $input['token_url'] ) : UTFEED_X_OAUTH_TOKEN_URL;
 		$new['scopes'] = isset( $input['scopes'] ) ? sanitize_text_field( $input['scopes'] ) : 'tweet.read users.read offline.access';
+		$new['cache_minutes'] = isset( $input['cache_minutes'] ) ? max( 1, absint( $input['cache_minutes'] ) ) : 10;
+		$new['stale_hours'] = isset( $input['stale_hours'] ) ? max( 1, absint( $input['stale_hours'] ) ) : 6;
 
 		foreach ( array( 'access_token', 'refresh_token', 'token_type' ) as $key ) {
 			$new[ $key ] = isset( $old[ $key ] ) ? $old[ $key ] : '';
@@ -386,6 +390,20 @@
 					<tr>
 						<th scope="row"><label for="utfeed-token-url"><?php esc_html_e( 'Token URL', 'ultimate-twitter-feeds' ); ?></label></th>
 						<td><input id="utfeed-token-url" name="utfeed_settings[token_url]" type="url" class="regular-text" value="<?php echo esc_attr( $settings['token_url'] ); ?>" /></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="utfeed-cache-minutes"><?php esc_html_e( 'API Cache Minutes', 'ultimate-twitter-feeds' ); ?></label></th>
+						<td>
+							<input id="utfeed-cache-minutes" name="utfeed_settings[cache_minutes]" type="number" min="1" class="small-text" value="<?php echo esc_attr( $settings['cache_minutes'] ); ?>" />
+							<p class="description"><?php esc_html_e( 'How long to cache fresh API results.', 'ultimate-twitter-feeds' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="utfeed-stale-hours"><?php esc_html_e( 'Stale Cache Hours', 'ultimate-twitter-feeds' ); ?></label></th>
+						<td>
+							<input id="utfeed-stale-hours" name="utfeed_settings[stale_hours]" type="number" min="1" class="small-text" value="<?php echo esc_attr( $settings['stale_hours'] ); ?>" />
+							<p class="description"><?php esc_html_e( 'How long to keep a stale cache for rate-limit fallback.', 'ultimate-twitter-feeds' ); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Redirect URI', 'ultimate-twitter-feeds' ); ?></th>
